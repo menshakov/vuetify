@@ -32,6 +32,7 @@ import {
 // Calendars
 import VCalendarMonthly from './VCalendarMonthly'
 import VCalendarDaily from './VCalendarDaily'
+import VCalendarTimeline from './VCalendarTimeline'
 import VCalendarWeekly from './VCalendarWeekly'
 import VCalendarCategory from './VCalendarCategory'
 import { CalendarTimestamp, CalendarFormatter } from 'vuetify/types'
@@ -54,6 +55,7 @@ export default CalendarWithEvents.extend({
     ...props.calendar,
     ...props.weeks,
     ...props.intervals,
+    ...props.timeline,
     ...props.category,
   },
 
@@ -90,6 +92,12 @@ export default CalendarWithEvents.extend({
           start = this.getStartOfWeek(around)
           end = this.getEndOfWeek(around)
           maxDays = 7
+          break
+        case 'timeline':
+          component = VCalendarTimeline
+          start = getStartOfMonth(around)
+          end = getEndOfMonth(around)
+          maxDays = 31
           break
         case 'day':
           component = VCalendarDaily
@@ -218,6 +226,9 @@ export default CalendarWithEvents.extend({
             mover(moved)
             break
           case 'week':
+            relativeDays(moved, mover, DAYS_IN_WEEK)
+            break
+          case 'timeline':
             relativeDays(moved, mover, DAYS_IN_WEEK)
             break
           case 'day':

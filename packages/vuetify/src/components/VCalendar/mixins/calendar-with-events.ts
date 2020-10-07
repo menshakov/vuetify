@@ -39,6 +39,7 @@ import {
   CalendarEventOverlapMode,
   CalendarEvent,
   CalendarEventCategoryFunction,
+  CalendarDayBodyTrackSlotScope,
 } from 'vuetify/types'
 
 // Types
@@ -71,6 +72,7 @@ interface VEventScopeInput {
 const WIDTH_FULL = 100
 const WIDTH_START = 95
 const MINUTES_IN_DAY = 1440
+const WIDTH_INDENT = 5
 
 /* @vue/component */
 export default CalendarBase.extend({
@@ -251,6 +253,85 @@ export default CalendarBase.extend({
         style: {
           height: `${eventHeight}px`,
           width: `${width}%`,
+          'margin-bottom': `${eventMarginBottom}px`,
+        },
+        attrs: {
+          'data-date': day.date,
+        },
+        key: event.index,
+        ref: 'events',
+        refInFor: true,
+      })
+    },
+    getEventOffsetWeek (
+      event: CalendarEventParsed,
+      week: CalendarTimestamp[]
+    ): { isEventStartBeforeWeek: boolean, isEventEndAfterWeek: boolean, startWeekdayIdentifier: number, endWeekdayIdentifier: number } {
+      const startWeekdayIdentifier = getDayIdentifier(week[0])
+      const endWeekdayIdentifier = getDayIdentifier(week[week.length - 1])
+
+      return {
+        startWeekdayIdentifier,
+        endWeekdayIdentifier,
+        isEventStartBeforeWeek: event.startIdentifier < startWeekdayIdentifier,
+        isEventEndAfterWeek: event.endIdentifier > endWeekdayIdentifier,
+      }
+    },
+    genTimelineEvent ({ event }: CalendarEventVisual, day: CalendarDayBodyTrackSlotScope): VNode | false {
+      const eventHeight = this.eventHeight * 2
+      const eventMarginBottom = this.eventMarginBottom
+      const dayIdentifier = getDayIdentifier(day)
+      const week = day.week
+      const {
+        isEventStartBeforeWeek,
+        isEventEndAfterWeek,
+        startWeekdayIdentifier,
+      } = this.getEventOffsetWeek(event, week)
+      const start = dayIdentifier === event.startIdentifier
+      let end = dayIdentifier === event.endIdentifier
+      let width = start && !isEventEndAfterWeek
+        ? -WIDTH_INDENT
+        : isEventEndAfterWeek ? WIDTH_FULL / 2 : WIDTH_FULL / 2 - WIDTH_INDENT
+
+      const top = day.trackToY(event.input.group)
+      const offsetLeft = start ? WIDTH_FULL / 2 : 0
+
+      if (!top ||
+        (isEventStartBeforeWeek && dayIdentifier > startWeekdayIdentifier) ||
+        (!isEventStartBeforeWeek && !start)
+      ) {
+        return false
+      }
+
+      let widthBorder = 0
+      if (!this.categoryMode) {
+        for (let i = day.index + 1; i < week.length; i++) {
+          const weekdayIdentifier = getDayIdentifier(week[i])
+          if (event.endIdentifier >= weekdayIdentifier) {
+            width += WIDTH_FULL
+            widthBorder += 1
+            end = end || weekdayIdentifier === event.endIdentifier
+          } else {
+            end = true
+            break
+          }
+        }
+      }
+      const scope = { eventParsed: event, day, start, end, timed: false }
+
+      return this.genEvent(event, scope, true, {
+        staticClass: 'v-event',
+        class: {
+          'v-event-start': start,
+          'v-event-end': end,
+        },
+        style: {
+          position: 'absolute',
+          top: `${top}px`,
+          height: `${eventHeight}px`,
+          width: `calc(${width}% + ${widthBorder}px)`,
+          'margin-left': `${offsetLeft}%`,
+          'margin-top': `${eventMarginBottom}px`,
           'margin-bottom': `${eventMarginBottom}px`,
         },
         attrs: {
@@ -468,6 +549,7 @@ export default CalendarBase.extend({
       const slotDay = slots.day
       const slotDayHeader = slots['day-header']
       const slotDayBody = slots['day-body']
+      const slotDayBodyTrack = slots['day-body-track']
 
       return {
         ...slots,
@@ -505,6 +587,23 @@ export default CalendarBase.extend({
 
           if (slotDayBody) {
             const slot = slotDayBody(day)
+            if (slot) {
+              children = children.concat(slot)
+            }
+          }
+          return children
+        },
+        'day-body-track': (day: CalendarDayBodyTrackSlotScope) => {
+          const events = getSlotChildren(day, this.getEventsForDayTimed, this.genTimelineEvent, true)
+
+          let children: VNode[] = [
+            this.$createElement('div', {
+              staticClass: 'v-event-tracks-container',
+            }, events),
+          ]
+
+          if (slotDayBodyTrack) {
+            const slot = slotDayBodyTrack(day)
             if (slot) {
               children = children.concat(slot)
             }

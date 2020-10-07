@@ -284,3 +284,17 @@ export type DataItemsPerPageOption = (number | {
 });
 
 export type RowClassFunction = (item: any) => null | undefined | string | string[] | Record<string, boolean>
+
+export interface CalendarDayBodyTrackSlotScope extends CalendarDaySlotScope {
+  trackToY: (trackId: string) => number
+  trackToX: (trackId: string) => number
+}
+
+export type CalendarTimestampTrack = CalendarTimestamp & { track: string }
+
+export interface Track {
+  id: string
+  parent: string | null
+  text: string
+}
+

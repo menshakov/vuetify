@@ -1,7 +1,7 @@
 
 import { validateTimestamp, parseDate, DAYS_IN_WEEK, validateTime } from './timestamp'
 import { PropType } from 'vue'
-import { CalendarEvent, CalendarFormatter, CalendarTimestamp, CalendarEventOverlapMode, CalendarEventNameFunction, CalendarEventColorFunction, CalendarEventCategoryFunction, CalendarEventTimedFunction } from 'vuetify/types'
+import { CalendarEvent, CalendarFormatter, CalendarTimestamp, CalendarEventOverlapMode, CalendarEventNameFunction, CalendarEventColorFunction, CalendarEventCategoryFunction, CalendarEventTimedFunction, CalendarTimestampTrack, Track } from 'vuetify/types'
 import { CalendarEventOverlapModes } from '../modes'
 import { PropValidator } from 'vue/types/options'
 
@@ -85,6 +85,30 @@ export default {
     },
     showIntervalLabel: {
       type: Function as PropType<(interval: CalendarTimestamp) => boolean>,
+      default: null,
+    },
+  },
+  timeline: {
+    groups: {
+      type: Array,
+      default: () => [],
+    } as PropValidator<Track[]>,
+    maxDays: {
+      type: Number,
+      default: 7,
+    },
+    trackHeight: {
+      type: [Number, String],
+      default: 48,
+      validate: validateNumber,
+    },
+    trackWidth: {
+      type: [Number, String],
+      default: 140,
+      validate: validateNumber,
+    },
+    trackStyle: {
+      type: Function as PropType<(interval: CalendarTimestampTrack) => object>,
       default: null,
     },
   },
